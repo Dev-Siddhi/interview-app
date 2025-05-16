@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--Comment new -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepConnect</title>
+    <!-- <script src="https://unpkg.com/monaco-editor@0.33.0/min/vs/loader.js"></script> -->
+</head>
+<style>
+    #editor-container {
+        width: 100%;
+        height: 400px;
+        border: 1px solid #ccc;
+    }
+
+    .top-bar {
+  position: absolute;
+  top: 10px; 
+  right: 10px; 
+  padding: 10px 15px;
+  background-color: rgba(179, 255, 0, 0);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+</style>
+
+<body>
+    <header>
+        <h1>💼PrepConnect</h1>
+        <p class="tagline">Connecting you to career success.</p>
+    </header>
+    <!--login page -->
+    <div id="loginPage" style="display:block;">
+        <h2>Login to app</h2>
+        <label id="username">Username:</label>
+        <input type="text" id="usernameInput" placeholder="Enter your username here...">
+        <div style="margin-top: 10px;">
+            <input id="interviewerBtn" type="radio" name="role" value="interviewer" />
+            <label>Interviewer</label>
+
+            <input id="intervieweeBtn" type="radio" name="role" value="interviewee" />
+            <label>Interviewee</label>
+        </div><br><br>
+        <button id="loginBtn">Login</button>
+    </div>
+
+    <!-- Join interviewer ROOM  -->
+    <div id="roomPageInterviewer" style="display:none;">
+    <h3>Create Interview Room</h3>
+    <button id="createRoomBtn" onclick="createRoom()">Create Room</button>
+    <p id="displayRoomId"></p>
+    <p id="status"></p>
+</div>
+    
+    <!-- Join interviewee ROOM -->
+    <div id="roomPageInterviewee" style="display:none;">
+        <h2>Join Interview Room</h2>
+        <input type="text" id="room-id" placeholder="Enter your Room ID" />
+        <button id="joinRoom" onclick="joinRoom()">Join Room</button>
+        <p id="statusInterviewer"></p>
+    </div>
+
+    <!--main page-->
+    <div id="mainPage" style="display:none">
+        <div class="top-bar">
+          <button onclick="logout()" id="logoutBtn">Logout</button>
+        </div>
+
+        <!--video-call section -->
+        <div class="panel video-panel">
+            <h2>🎥Interview video call</h2>
+            <div class="video wrapper">
+                <video id="localVideo" autoplay muted></video>
+                <video id="remoteVideo" autoplay></video>
+            </div>
+            <div class="video-panel">
+                <button id="startCall">Start Call</button>
+                <button id="endCall">End call</button>
+            </div>
+        </div><br><br>
+
+        <!--chat section -->
+        <div class="panel chat-panel">
+            <h2>💬Interview Chat</h2>
+            <div id="chatBox" class="chatBox"></div>
+            <div class="chatInput">
+                <input type="text" id="messageInput" placeholder="Type here...">
+                <button id="sendButton">Send</button>
+                <div id="message" class="chat-box"></div>
+            </div>
+        </div><br><br>
+
+        <!-- Monaco Editor -->
+        <div id="editorPanel" style="display: none;" 
+        <h2>Code Editor </h2>
+            <div id="editor-container"></div>
+            <button id="copyBtn">📋 Copy Code</button>
+        </div>
+    </div><br><br>
+
+
+    <!--past interviews -->
+    <div id="pastPanel" style="display:none;">
+        <h2>📋Past Interview</h2>
+        <input type="text" id="pastInterviewInput" placeholder="Enter a username">
+        <button id="pastInterviewBtn">Load Interview</button>
+        <div id="interviewLogs"></div><br><br>
+    </div>
+
+    <script src="https://cdn.socket.io/4.4.0/socket.io.min.js"></script>
+    <script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
