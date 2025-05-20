@@ -259,7 +259,7 @@ let roomId = "";
     async deleteInterview(id, divElement) {
       try {
         // Send delete request to server
-        const res = fetch(`/interviews/${id}`, {
+        const res = await fetch(`/interviews/${id}`, {
           method: "DELETE",
         });
 
