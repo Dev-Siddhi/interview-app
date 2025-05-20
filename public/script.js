@@ -219,7 +219,7 @@ let roomId = "";
 
         // If no data found, show message
         if (interviews.length === 0) {
-          resultdiv.textContent = "No interviews found";
+         this.resultdiv.textContent = "No interviews found";
           return;
         }
 
