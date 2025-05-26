@@ -5,11 +5,13 @@ import fs from "fs";
 import path from "path";
 import { Server } from "socket.io";
 import { fileURLToPath } from "url";
+import mongoose from "mongoose";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const interviewFile = path.join(__dirname, "interview.json");
+// const interviewFile = path.join(__dirname, "interview.json");
 const options = {
   key: fs.readFileSync("./certs/key.pem"),
   cert: fs.readFileSync("./certs/cert.pem"),
@@ -147,62 +149,99 @@ io.on("connection", (socket) => {
   }
 });
 
+
+// connects mongodb database
+mongoose.connect("mongodb://localhost:27017/interviewsDB")
+
+// console if succefully connected 
+const db = mongoose.connection;
+db.on("connected",()=>{
+  console.log("connected to mongodb")
+})
+
+// console err in case of error occurence
+db.on("error",(err)=>{
+  console.error("mongodb connection error:",err)
+})
+
+
+// mongodb schema
+const interviewSchema = new mongoose.Schema({
+  interviewer: String,
+  interviewee:String,
+  time:{
+    type:Date,
+    default:Date.now}
+})
+
+// creating model to interact with database for CRUD operations 
+const interviewModel = mongoose.model("interview",interviewSchema)
+
+
 // Save interview history to JSON file
-function pastInterview(interviewer, interviewee) {
-  const interview = {
-    id: Date.now(),
-    interviewer,
-    interviewee,
-    time: new Date().toISOString(),
-  };
-  // Read existing interviews
-  let interviews = [];
-  if (fs.existsSync(interviewFile)) {
-    const data = fs.readFileSync(interviewFile, "utf-8");
-    interviews = JSON.parse(data);
+async function pastInterview(interviewer, interviewee) {
+  try {
+    // create and save interviews 
+    const interview = new interviewModel({ interviewer, interviewee });
+    await interview.save();   
   }
-  // Append new interview and save
-  interviews.push(interview);
-  fs.writeFileSync(interviewFile, JSON.stringify(interviews, null, 2));
+  // console error 
+   catch (error) {
+    console.error("❌ Error saving interview:", error);
+  }
 }
 
+
 // API to fetch all interviews related to a specific user
-app.get("/interviews/:username", (req, res) => {
+app.get("/interviews/:username", async (req, res) => {
+  
+  // extract username
   const username = req.params.username.trim().toLowerCase();
 
-  if (!fs.existsSync(interviewFile)) return res.json([]);
+  // find interviews by username matches interviewer or interviewee (case-insensitive)
+  try {
+    const results = await interviewModel.find({
+      $or: [
+        { interviewer: new RegExp(`^${username}$`, "i") },
+        { interviewee: new RegExp(`^${username}$`, "i") }
+      ]
+    })
+    // Convert results to plain objects and add 'id' field
+  const formatted = results.map(i=>({...i.toObject(),id:i._id}))
 
-  const data = fs.readFileSync(interviewFile, "utf-8");
-  const interviews = JSON.parse(data || "[]");
-
-  const result = interviews.filter((i) => {
-
-  // Filter by interviewer or interviewee name
-    const interviewer = i.interviewer?.trim().toLowerCase();
-    const interviewee = i.interviewee?.trim().toLowerCase();
-    return interviewer === username || interviewee === username;
-  });
-  res.json(result);
+  // send formatted data as json responce
+    res.json(formatted);
+  } 
+  catch (err) {
+  // handle and respond with server error 
+    console.error("Error fetching interviews:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
+
 // API to delete an interview by ID
-app.delete("/interviews/:id", (req, res) => {
+app.delete("/interviews/:id", async (req, res) => {
+  // get id from the url
   const id = req.params.id;
+ 
+  try{
+    // find and delete the interview by id 
+    const result = await interviewModel.findByIdAndDelete(id)
+  
+    // if not found send 404 responce 
+    if(!result){
+    return res.status(404).json({success:false,message:"Interview not found"})
+   }
 
-  let data = fs.readFileSync(interviewFile, "utf-8");
-  const interviewss = JSON.parse(data);
-
-   // Remove the matching interview
-  const updated = interviewss.filter((i) => i.id.toString() !== id.toString());
-
-  if (interviewss.length === updated.length) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Interview not found " });
+  //  if deleted successfully send confirmation
+   res.json({success: true,message:"interview deleted"})
   }
-  // save updated data
-  fs.writeFileSync(interviewFile, JSON.stringify(updated, null, 2));
-  return res.json({ success: true });
+  // handle any error during deletion
+  catch(err){
+    console.error("error deleting interview",err)
+    res.status(500).json({message:"error deleting interview"})
+  }
 });
 
 httpsServer.listen(4000, () => {
